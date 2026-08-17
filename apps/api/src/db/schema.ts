@@ -5,6 +5,7 @@ import {
   numeric,
   pgTable,
   text,
+  timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -13,6 +14,7 @@ export const ingredients = pgTable("ingredients", {
   name: text("name").notNull(),
   baseUnit: text("base_unit").notNull(),
   category: text("category").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export const recipes = pgTable("recipes", {
@@ -23,6 +25,7 @@ export const recipes = pgTable("recipes", {
   prepTimeMinutes: integer("prep_time_minutes").notNull().default(0),
   cookTimeMinutes: integer("cook_time_minutes").notNull().default(0),
   tags: text("tags").array().notNull().default([]),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export const recipeIngredients = pgTable("recipe_ingredients", {

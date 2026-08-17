@@ -1,20 +1,39 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { recipeIngredients, recipes } from "../db/schema.js";
+import { ingredients, recipeIngredients, recipes } from "../db/schema.js";
 import { isForeignKeyViolation } from "../lib/db-errors.js";
 import { createRecipeSchema, updateRecipeSchema } from "../validators/recipe.js";
 
+const notDeleted = isNull(recipes.deletedAt);
+
+class IngredientsNotFoundError extends Error {}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function assertIngredientsExist(tx: Tx, ingredientIds: string[]) {
+  const uniqueIds = [...new Set(ingredientIds)];
+  if (uniqueIds.length === 0) return;
+
+  const found = await tx.query.ingredients.findMany({
+    where: and(inArray(ingredients.id, uniqueIds), isNull(ingredients.deletedAt)),
+    columns: { id: true },
+  });
+  if (found.length !== uniqueIds.length) {
+    throw new IngredientsNotFoundError("One or more ingredients do not exist");
+  }
+}
+
 export const recipesRoute = new Hono()
   .get("/", async (c) => {
-    const all = await db.query.recipes.findMany();
+    const all = await db.query.recipes.findMany({ where: notDeleted });
     return c.json(all);
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
     const recipe = await db.query.recipes.findFirst({
-      where: eq(recipes.id, id),
+      where: and(eq(recipes.id, id), notDeleted),
       with: { ingredients: true },
     });
     if (!recipe) return c.json({ error: "Not found" }, 404);
@@ -24,6 +43,11 @@ export const recipesRoute = new Hono()
     const body = c.req.valid("json");
     try {
       const created = await db.transaction(async (tx) => {
+        await assertIngredientsExist(
+          tx,
+          body.ingredients.map((ingredient) => ingredient.ingredientId),
+        );
+
         const [recipe] = await tx
           .insert(recipes)
           .values({
@@ -51,7 +75,7 @@ export const recipesRoute = new Hono()
       });
       return c.json(created, 201);
     } catch (err) {
-      if (isForeignKeyViolation(err)) {
+      if (err instanceof IngredientsNotFoundError || isForeignKeyViolation(err)) {
         return c.json({ error: "One or more ingredients do not exist" }, 400);
       }
       throw err;
@@ -65,11 +89,22 @@ export const recipesRoute = new Hono()
       const updated = await db.transaction(async (tx) => {
         const recipe =
           Object.keys(fields).length > 0
-            ? (await tx.update(recipes).set(fields).where(eq(recipes.id, id)).returning())[0]
-            : await tx.query.recipes.findFirst({ where: eq(recipes.id, id) });
+            ? (
+                await tx
+                  .update(recipes)
+                  .set(fields)
+                  .where(and(eq(recipes.id, id), notDeleted))
+                  .returning()
+              )[0]
+            : await tx.query.recipes.findFirst({ where: and(eq(recipes.id, id), notDeleted) });
         if (!recipe) return null;
 
         if (newIngredients) {
+          await assertIngredientsExist(
+            tx,
+            newIngredients.map((ingredient) => ingredient.ingredientId),
+          );
+
           await tx.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, id));
           if (newIngredients.length > 0) {
             await tx.insert(recipeIngredients).values(
@@ -89,7 +124,7 @@ export const recipesRoute = new Hono()
       if (!updated) return c.json({ error: "Not found" }, 404);
       return c.json(updated);
     } catch (err) {
-      if (isForeignKeyViolation(err)) {
+      if (err instanceof IngredientsNotFoundError || isForeignKeyViolation(err)) {
         return c.json({ error: "One or more ingredients do not exist" }, 400);
       }
       throw err;
@@ -97,7 +132,11 @@ export const recipesRoute = new Hono()
   })
   .delete("/:id", async (c) => {
     const id = c.req.param("id");
-    const [deleted] = await db.delete(recipes).where(eq(recipes.id, id)).returning();
+    const [deleted] = await db
+      .update(recipes)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(recipes.id, id), notDeleted))
+      .returning();
     if (!deleted) return c.json({ error: "Not found" }, 404);
     return c.body(null, 204);
   });
