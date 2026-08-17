@@ -30,8 +30,10 @@ export const ingredientSchema = z.object({
 });
 
 export const createIngredientSchema = ingredientSchema.omit({ id: true });
+export const updateIngredientSchema = createIngredientSchema.partial();
 
 export type IngredientCategory = z.infer<typeof ingredientCategorySchema>;
 export type Unit = z.infer<typeof unitSchema>;
 export type Ingredient = z.infer<typeof ingredientSchema>;
 export type CreateIngredient = z.infer<typeof createIngredientSchema>;
+export type UpdateIngredient = z.infer<typeof updateIngredientSchema>;

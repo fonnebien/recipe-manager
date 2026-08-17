@@ -1,3 +1,3 @@
-import { createRecipeSchema } from "@repo/shared";
+import { createRecipeSchema, updateRecipeSchema } from "@repo/shared";
 
-export { createRecipeSchema };
+export { createRecipeSchema, updateRecipeSchema };
