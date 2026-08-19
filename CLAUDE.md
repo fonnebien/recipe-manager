@@ -23,8 +23,12 @@ pnpm --filter @repo/api db:studio     # open Drizzle Studio
 pnpm dev:api               # run apps/api in watch mode (tsx), port from .env (default 3000)
 pnpm dev:web               # run apps/web (Vite), http://localhost:5173
 
-pnpm lint                  # tsc --noEmit / vue-tsc --noEmit across all workspaces
-pnpm test                  # vitest across all workspaces (currently only apps/api has tests)
+pnpm lint                  # oxlint across the repo
+pnpm lint:fix               # oxlint --fix
+pnpm format                 # oxfmt, formats the repo in place
+pnpm format:check           # oxfmt --check, fails without writing
+pnpm typecheck              # tsc --noEmit / vue-tsc --noEmit across all workspaces
+pnpm test                   # vitest across all workspaces (currently only apps/api has tests)
 pnpm --filter @repo/api test        # run just the api's tests
 pnpm --filter @repo/api test:watch  # watch mode
 pnpm build                 # build all workspaces
@@ -53,12 +57,14 @@ recipe-manager/
 ## Stack
 
 **Backend (`apps/api`)**
+
 - Node, Hono, Drizzle ORM, PostgreSQL (local via docker-compose — chosen deliberately over SQLite for real relational integrity, window functions, CTEs)
 - Zod validation via `@hono/zod-validator`
 - Vitest for tests
 - Pino for structured logging (+ `pino-pretty` in dev), request-id middleware, centralized error handling via `app.onError()`, Drizzle `logger: true` for raw SQL visibility
 
 **Frontend (`apps/web`)**
+
 - Vue 3 Composition API (`<script setup>`), Vite
 - Pinia for transient UI state only (e.g. selected recipes for the current grocery list) — not server data
 - TanStack Query (Vue Query) for server state/caching, wrapping `hono/client` calls

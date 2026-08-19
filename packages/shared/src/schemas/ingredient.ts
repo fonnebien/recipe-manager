@@ -11,16 +11,7 @@ export const ingredientCategorySchema = z.enum([
   "other",
 ]);
 
-export const unitSchema = z.enum([
-  "g",
-  "kg",
-  "ml",
-  "l",
-  "tsp",
-  "tbsp",
-  "cup",
-  "piece",
-]);
+export const unitSchema = z.enum(["g", "kg", "ml", "l", "tsp", "tbsp", "cup", "piece"]);
 
 export const ingredientSchema = z.object({
   id: z.uuid(),

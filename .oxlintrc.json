@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vue", "vitest", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "import/no-named-export": "off",
+    "import/group-exports": "off",
+    "import/no-unassigned-import": "off",
+    "unicorn/no-null": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["dist", "drizzle"]
+}

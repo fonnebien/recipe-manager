@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
 import { and, eq, inArray, isNull } from "drizzle-orm";
+import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { ingredients, recipeIngredients, recipes } from "../db/schema.js";
 import { isForeignKeyViolation } from "../lib/db-errors.js";
@@ -96,7 +96,9 @@ export const recipesRoute = new Hono()
                   .where(and(eq(recipes.id, id), notDeleted))
                   .returning()
               )[0]
-            : await tx.query.recipes.findFirst({ where: and(eq(recipes.id, id), notDeleted) });
+            : await tx.query.recipes.findFirst({
+                where: and(eq(recipes.id, id), notDeleted),
+              });
         if (!recipe) return null;
 
         if (newIngredients) {

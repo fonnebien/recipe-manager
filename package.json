@@ -1,17 +1,25 @@
 {
   "name": "recipe-pantry-manager",
   "private": true,
-  "packageManager": "pnpm@11.21.0",
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
     "dev:api": "pnpm --filter @repo/api dev",
     "dev:web": "pnpm --filter @repo/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "pnpm -r typecheck",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
-  }
+  },
+  "devDependencies": {
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.21.0"
 }
